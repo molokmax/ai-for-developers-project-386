@@ -13,6 +13,17 @@ jobs:
       pull-requests: write
     steps:
       - uses: googleapis/release-please-action@v5
+        id: rp
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Временная диагностика: результат action в Job Summary (виден в UI рана)
+      - name: Debug outputs
+        run: |
+          {
+            echo '## release-please outputs'
+            echo '```json'
+            echo '${{ toJSON(steps.rp.outputs) }}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
