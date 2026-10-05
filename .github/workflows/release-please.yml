@@ -18,12 +18,6 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # Временная диагностика: результат action в Job Summary (виден в UI рана)
+      # Временная диагностика: результат action в annotations (видно через API)
       - name: Debug outputs
-        run: |
-          {
-            echo '## release-please outputs'
-            echo '```json'
-            echo '${{ toJSON(steps.rp.outputs) }}'
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: echo "::notice::rp-outputs $(echo '${{ toJSON(steps.rp.outputs) }}' | tr -d '\n')"
