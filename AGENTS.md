@@ -54,6 +54,7 @@ npm test         # vitest run; watch: npm run test:watch
 
 ## Прочее
 
+- Релизы ведёт release-please: пуш/мерж в `main` запускает `.github/workflows/release-please.yml`, который создаёт или обновляет release PR (`chore: release ...`). Релиз и тег создаются мержем release PR - версии руками не проставлять, теги руками не пушить. Отсюда обязательность Conventional Commits
 - Сообщения коммитов - по спецификации Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:` и т.п.), текст на английском
 - `.github/workflows/hexlet-check.yml` - служебный, не удалять/не редактировать/не переименовывать. Свои CI-шаги добавлять отдельным workflow
 - UI-текст и комментарии в проекте на русском; на английском - только идентификаторы
