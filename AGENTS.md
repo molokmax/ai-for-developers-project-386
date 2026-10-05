@@ -58,3 +58,17 @@ npm test         # vitest run; watch: npm run test:watch
 - Сообщения коммитов - по спецификации Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:` и т.п.), текст на английском
 - `.github/workflows/hexlet-check.yml` - служебный, не удалять/не редактировать/не переименовывать. Свои CI-шаги добавлять отдельным workflow
 - UI-текст и комментарии в проекте на русском; на английском - только идентификаторы
+
+## Agent skills
+
+### Issue tracker
+
+Issues трекаются в GitHub Issues этого репо через `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Дефолтная лексика: каждый лейбл равен имени роли. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` в корне репо. See `docs/agents/domain.md`.
