@@ -1,0 +1,23 @@
+@CallCalendar.Api_HostAddress = http://localhost:5262
+
+GET {{CallCalendar.Api_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+GET {{CallCalendar.Api_HostAddress}}/api/slots
+Accept: application/json
+
+###
+
+POST {{CallCalendar.Api_HostAddress}}/api/bookings
+Accept: application/json
+Content-Type: application/json
+
+{
+  "slotId": 1,
+  "customerName": "Иван Петров",
+  "customerEmail": "ivan@example.com"
+}
+
+###

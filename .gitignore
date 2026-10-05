@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Env
+.env
+.env.*
+
+# OS
+Thumbs.db
+.DS_Store

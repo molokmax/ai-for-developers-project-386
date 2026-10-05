@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- Правила стиля из .editorconfig проверяются на dotnet build -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Стандартный набор CA-анализаторов -->
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- Нужна для работы IDE0005 (лишние using) на билде.
+         CS1591 отключён в .editorconfig -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+</Project>

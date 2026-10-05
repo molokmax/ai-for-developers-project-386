@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      # Линт: правила стиля из .editorconfig проверяются как warnings на билде,
+      # TreatWarningsAsErrors превращает любой warning в падение CI
+      - name: Build (checks code style)
+        run: dotnet build --no-incremental --configuration Release --verbosity quiet -p:TreatWarningsAsErrors=true
+
+      # Линт: форматирование (whitespace, using-директивы и т.п.)
+      - name: Format check
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Tests
+        run: dotnet test --configuration Release --no-build --verbosity minimal
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      # Проверка типов + сборка
+      - name: Build (tsc + vite)
+        run: npm run build
+
+      - name: Tests (vitest)
+        run: npm test
