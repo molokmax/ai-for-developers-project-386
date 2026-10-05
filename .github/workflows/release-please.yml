@@ -10,14 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
       pull-requests: write
     steps:
       - uses: googleapis/release-please-action@v5
-        id: rp
         with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-
-      # Временная диагностика: результат action в annotations (видно через API)
-      - name: Debug outputs
-        run: echo "::notice::rp-outputs $(echo '${{ toJSON(steps.rp.outputs) }}' | tr -d '\n')"
+          release-type: simple
