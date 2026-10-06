@@ -1,65 +1,57 @@
-import { fetchSlots } from '../api/slots'
-import { Badge, Button, Card, Group, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
-import { DateInput } from '@mantine/dates'
-import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Button, Card, Container, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { Link } from 'react-router-dom'
+
+const steps = [
+  {
+    title: '1. Выберите слот',
+    text: 'Свободные окна на ближайшие дни с 9:00 до 18:00. Длительность звонка — один час.',
+  },
+  {
+    title: '2. Оставьте контакты',
+    text: 'Имя и email — этого достаточно, чтобы записаться.',
+  },
+  {
+    title: '3. Ждите звонка',
+    text: 'В назначенное время мы позвоним вам.',
+  },
+]
 
 export default function HomePage() {
-  const [date, setDate] = useState<string | null>(dayjs().format('YYYY-MM-DD'))
-  const navigate = useNavigate()
-
-  const { data: slots, isLoading } = useQuery({
-    queryKey: ['slots', date],
-    queryFn: () =>
-      date
-        ? fetchSlots(dayjs(date).startOf('day').toDate(), dayjs(date).endOf('day').toDate())
-        : fetchSlots(),
-  })
-
   return (
-    <Stack maw={900} mx="auto">
-      <Text fw={600} size="lg">
-        Слоты
-      </Text>
+    <Container size="md" py="xl">
+      <Stack gap="xl">
+        <Stack gap="md" ta="center" py="xl">
+          <Title order={1}>Запишитесь на звонок в удобное время</Title>
+          <Text c="dimmed" size="lg" maw={600} mx="auto">
+            Календарь звонков — сервис онлайн-записи: выберите свободный слот, оставьте
+            контакты, и мы позвоним вам в назначенное время.
+          </Text>
+          <Button component={Link} to="/slots" size="lg" mx="auto">
+            Записаться на звонок
+          </Button>
+        </Stack>
 
-      <DateInput
-        value={date}
-        onChange={setDate}
-        label="Дата"
-        placeholder="Выберите дату"
-        valueFormat="DD.MM.YYYY"
-        maw={300}
-      />
-
-      {isLoading && <Skeleton height={200} radius="sm" />}
-
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-        {slots?.map(slot => (
-          <Card key={slot.id} withBorder padding="md">
-            <Group justify="space-between">
-              <Text fw={500}>
-                {dayjs(slot.startUtc).format('DD.MM HH:mm')}
+        <Title order={2} ta="center">
+          Как это работает
+        </Title>
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          {steps.map(step => (
+            <Card key={step.title} withBorder padding="lg">
+              <Title order={3}>{step.title}</Title>
+              <Text c="dimmed" mt="sm">
+                {step.text}
               </Text>
-              <Badge color={slot.isBooked ? 'gray' : 'green'}>
-                {slot.isBooked ? 'Занято' : 'Свободно'}
-              </Badge>
-            </Group>
-            <Text c="dimmed" size="sm" mt="xs">
-              Длительность {Number(slot.duration.split(':')[0])} ч
-            </Text>
-            <Button
-              mt="sm"
-              fullWidth
-              disabled={slot.isBooked}
-              onClick={() => navigate(`/book/${slot.id}`)}
-            >
-              Забронировать
-            </Button>
-          </Card>
-        ))}
-      </SimpleGrid>
-    </Stack>
+            </Card>
+          ))}
+        </SimpleGrid>
+
+        <Stack gap="md" ta="center" py="xl">
+          <Title order={2}>Готовы записаться?</Title>
+          <Button component={Link} to="/slots" size="lg" variant="outline" mx="auto">
+            Выбрать слот
+          </Button>
+        </Stack>
+      </Stack>
+    </Container>
   )
 }

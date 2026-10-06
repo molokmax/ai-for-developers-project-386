@@ -12,6 +12,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
 import BookingPage from './pages/BookingPage'
 import HomePage from './pages/HomePage'
+import SlotsPage from './pages/SlotsPage'
 
 dayjs.locale('ru')
 
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'slots', element: <SlotsPage /> },
       { path: 'book/:slotId', element: <BookingPage /> },
     ],
   },

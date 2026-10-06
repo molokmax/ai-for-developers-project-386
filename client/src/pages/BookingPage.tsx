@@ -22,8 +22,8 @@ export default function BookingPage() {
     mutationFn: () => createBooking({ slotId: id, customerName: name, customerEmail: email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['slots'] })
-      notifications.show({ title: 'Готово', message: 'Слот забронирован', color: 'green' })
-      navigate('/')
+      notifications.show({ title: 'Готово', message: 'Вы записаны на звонок', color: 'green' })
+      navigate('/slots')
     },
     onError: (error: Error) => {
       notifications.show({ title: 'Ошибка', message: error.message, color: 'red' })
@@ -33,7 +33,7 @@ export default function BookingPage() {
   return (
     <Stack maw={400} mx="auto">
       <Text fw={600} size="lg">
-        Бронирование
+        Запись на звонок
       </Text>
 
       {slot ? (
@@ -62,9 +62,9 @@ export default function BookingPage() {
         disabled={!slot || !name || !email}
         onClick={() => bookingMutation.mutate()}
       >
-        Забронировать
+        Записаться
       </Button>
-      <Button variant="subtle" onClick={() => navigate('/')}>
+      <Button variant="subtle" onClick={() => navigate('/slots')}>
         Назад
       </Button>
     </Stack>
