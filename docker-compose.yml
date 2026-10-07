@@ -1,0 +1,15 @@
+# Локальный запуск собранного образа: API + SPA в одном контейнере.
+# Порт можно поменять: PORT=3000 docker compose up --build
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      - callcalendar-data:/data
+    restart: unless-stopped
+    # healthcheck наследуется из Dockerfile (/api/health)
+
+volumes:
+  callcalendar-data:

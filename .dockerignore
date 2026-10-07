@@ -1,0 +1,23 @@
+# Служебные каталоги вне контекста сборки
+.git
+.github
+.vs
+.idea
+docs
+tests
+
+# Артефакты сборки (собираются заново в Dockerfile)
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.vite
+
+# Локальные базы SQLite
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Служебное
+**/*.user
+**/.DS_Store

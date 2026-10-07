@@ -52,6 +52,14 @@ npm run api:gen:watch # watch-режим генерации SDK
 - В шаблонах .NET 10 нет Swashbuckle/Swagger UI
 - `Directory.Build.props` включает `EnforceCodeStyleInBuild`, `AnalysisMode=Recommended`, `GenerateDocumentationFile` (последняя - ради IDE0005 на билде, CS1591 подавлен в .editorconfig и NoWarn)
 
+## Docker
+
+- `Dockerfile` в корне: мультистейдж (node:22-alpine -> dotnet/sdk:10.0 -> aspnet:10.0), build context - корень репо (API тянет `contracts/generated/openapi.json`); образ содержит API + собранный SPA в `wwwroot`
+- Контейнер слушает `PORT` (дефолт 8080, читается в Program.cs через `UseUrls`; в dev `ASPNETCORE_URLS` из launchSettings приоритетнее). `RUN_MIGRATIONS=1` в образе включает миграции/сид вне Development. SQLite: `/data/callcalendar.db` (env `ConnectionStrings__Default`), контейнеру нужен volume на `/data` (non-root `$APP_UID`)
+- Неизвестные `/api/*` отдают 404 (catch-all `Map("/api/{**path}")`), всё остальное - SPA-fallback на `index.html` (`/assets/*` - immutable-кэш, `index.html` - no-cache)
+- `docker-compose.yml` - локальный прогон образа; healthcheck определён в Dockerfile на `/api/health`
+- `.github/workflows/docker.yml`: PR - только build без пуша; push в `main`/теги `v*` - пуш в `ghcr.io/<owner>/<repo>` (теги `main`, `sha-*`, семвер), кэш `type=gha`, платформа `linux/amd64`
+
 ## Фронтенд: нюансы (Mantine v9)
 
 - Даты в API v9 - строки `YYYY-MM-DD` (`DateStringValue`), не `Date`. `DatePicker` - календарь без инпута; для поля ввода с дропдауном брать `DateInput`. Пропсов `cancelLabel`/`clearLabel` в v9 нет

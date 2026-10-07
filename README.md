@@ -55,6 +55,28 @@ npm run dev
 Открыть http://localhost:5173. Фронт ходит на API через Vite-прокси (`/api`),
 поэтому CORS не нужен.
 
+## Docker
+
+Образ содержит и API, и собранный SPA: контейнер раздаёт фронтенд и `/api` на одном порту.
+
+```bash
+# Локальный запуск (сборка + контейнер + volume для SQLite)
+docker compose up --build
+```
+
+Приложение доступно на http://localhost:8080. Порт меняется переменной `PORT`:
+
+```bash
+PORT=3000 docker compose up --build
+```
+
+- SQLite-база лежит в named volume `callcalendar-data` (`/data/callcalendar.db`)
+- Миграции и демо-данные применяются при старте контейнера (`RUN_MIGRATIONS=1`,
+  отключается `-e RUN_MIGRATIONS=`)
+- Сборка CI: PR - только `docker build` без публикации, push в `main` и теги `v*` -
+  публикация в `ghcr.io/molokmax/ai-for-developers-project-386`
+  (`.github/workflows/docker.yml`)
+
 Полезные команды:
 
 ```bash
