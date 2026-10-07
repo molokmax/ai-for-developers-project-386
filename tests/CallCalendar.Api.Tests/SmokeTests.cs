@@ -237,6 +237,73 @@ public class SmokeTests(WebAppFactory factory) : IClassFixture<WebAppFactory>
     }
 
     [Fact]
+    public async Task Booking_DifferentEventTypesOnSameInterval_ReturnsConflict()
+    {
+        var client = factory.CreateClient();
+        var eventTypes = await GetEventTypesAsync(client);
+        var first = eventTypes[0];
+        var second = eventTypes.First(type => type.Id != first.Id);
+
+        // Слот 09:00 по времени владельца: полный рабочий день, свободен у обоих типов
+        var morningStart = await GetMorningSlotStartAsync(client, first.Id);
+
+        var firstBooking = await PostBookingAsync(client, Guid.NewGuid().ToString(), first.Id, morningStart);
+        Assert.Equal(HttpStatusCode.Created, firstBooking.StatusCode);
+
+        var secondBooking = await PostBookingAsync(client, Guid.NewGuid().ToString(), second.Id, morningStart);
+
+        Assert.Equal(HttpStatusCode.Conflict, secondBooking.StatusCode);
+    }
+
+    [Fact]
+    public async Task Booking_LastWindowDayIsBookable_DayBeyondWindowIsRejected()
+    {
+        var client = factory.CreateClient();
+        var (eventTypeId, _) = await GetFirstEventTypeAsync(client);
+
+        var slots = await GetSlotsAsync(client, eventTypeId);
+        // Последний свободный слот лежит на 14-м дне окна (включая текущий)
+        var lastStart = slots
+            .Select(slot => DateTimeOffset.Parse(slot.GetProperty("startUtc").GetString()!, CultureInfo.InvariantCulture))
+            .Max();
+
+        var lastDay = await PostBookingAsync(
+            client, Guid.NewGuid().ToString(), eventTypeId, FormatUtc(lastStart));
+        Assert.Equal(HttpStatusCode.Created, lastDay.StatusCode);
+
+        var beyondWindow = await PostBookingAsync(
+            client, Guid.NewGuid().ToString(), eventTypeId, FormatUtc(lastStart.AddDays(1)));
+        Assert.Equal(HttpStatusCode.BadRequest, beyondWindow.StatusCode);
+    }
+
+    [Fact]
+    public async Task Booking_OutsideWorkingHours_ReturnsBadRequest()
+    {
+        var client = factory.CreateClient();
+        var eventTypes = await GetEventTypesAsync(client);
+        var halfHourType = eventTypes.First(type => type.DurationMinutes == 30);
+        var longType = eventTypes.Where(type => type.DurationMinutes > 30).Select(type => type.Id).Cast<long?>().FirstOrDefault();
+
+        // 08:30 на сетке, но до начала рабочего дня 09:00
+        var beforeWork = await PostBookingAsync(
+            client, Guid.NewGuid().ToString(), halfHourType.Id, LocalStartUtc(2, 8, 30));
+        Assert.Equal(HttpStatusCode.BadRequest, beforeWork.StatusCode);
+
+        // 18:00 на сетке, но это конец рабочего дня: интервал не помещается
+        var afterWork = await PostBookingAsync(
+            client, Guid.NewGuid().ToString(), halfHourType.Id, LocalStartUtc(2, 18, 0));
+        Assert.Equal(HttpStatusCode.BadRequest, afterWork.StatusCode);
+
+        // Старт 17:30 при длительности больше 30 минут выходит за 18:00
+        if (longType is not null)
+        {
+            var exceeding = await PostBookingAsync(
+                client, Guid.NewGuid().ToString(), longType.Value, LocalStartUtc(2, 17, 30));
+            Assert.Equal(HttpStatusCode.BadRequest, exceeding.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Meetings_ReturnsUpcomingBookingsSortedByStart()
     {
         var client = factory.CreateClient();
@@ -282,6 +349,49 @@ public class SmokeTests(WebAppFactory factory) : IClassFixture<WebAppFactory>
 
         return (first.GetProperty("id").GetInt64(), first.GetProperty("durationMinutes").GetInt32());
     }
+
+    private static async Task<(long Id, int DurationMinutes)[]> GetEventTypesAsync(HttpClient client)
+    {
+        var document = JsonDocument.Parse(await client.GetStringAsync("/api/event-types"));
+
+        return document.RootElement.EnumerateArray()
+            .Select(item => (
+                Id: item.GetProperty("id").GetInt64(),
+                DurationMinutes: item.GetProperty("durationMinutes").GetInt32()))
+            .ToArray();
+    }
+
+    private static async Task<string> GetMorningSlotStartAsync(HttpClient client, long eventTypeId)
+    {
+        var slots = await GetSlotsAsync(client, eventTypeId);
+
+        var morningStart = slots
+            .Select(slot => (
+                Raw: slot.GetProperty("startUtc").GetString()!,
+                Start: DateTimeOffset.Parse(slot.GetProperty("startUtc").GetString()!, CultureInfo.InvariantCulture)))
+            .FirstOrDefault(slot =>
+                TimeZoneInfo.ConvertTime(slot.Start, OwnerTimeZone).TimeOfDay == TimeSpan.FromHours(9));
+
+        Assert.NotEqual(default, morningStart.Start);
+        return morningStart.Raw;
+    }
+
+    // Часовой пояс владельца: Calendar:TimeZone из appsettings.json
+    private static readonly TimeZoneInfo OwnerTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Moscow");
+
+    private static string LocalStartUtc(int dayOffset, int hour, int minute)
+    {
+        var local = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, OwnerTimeZone).Date
+            .AddDays(dayOffset)
+            .AddHours(hour)
+            .AddMinutes(minute);
+
+        return TimeZoneInfo.ConvertTimeToUtc(local, OwnerTimeZone)
+            .ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatUtc(DateTimeOffset value) =>
+        value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
 
     private static async Task<JsonElement[]> GetSlotsAsync(HttpClient client, long eventTypeId)
     {
