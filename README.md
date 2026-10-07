@@ -78,6 +78,7 @@ PORT=3000 docker compose up --build
   (`.github/workflows/docker.yml`)
 - Деплой последней релизной версии на VPS: `scripts/deploy.sh`, инструкция -
   [docs/deploy.md](docs/deploy.md)
+- Задеплоенная версия доступна по адресу: http://5.188.25.36:8088
 
 Полезные команды:
 
