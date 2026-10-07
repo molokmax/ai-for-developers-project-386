@@ -9,7 +9,13 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "api:gen": "orval --config ./orval.config.ts --fail-on-warnings",
+    "api:gen:watch": "orval --watch --config ./orval.config.ts",
+    "api:gen:check": "npm run api:gen && git diff --exit-code ./src/api/gen"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   },
   "dependencies": {
     "@mantine/core": "^9.7.0",
@@ -29,6 +35,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^29.1.1",
+    "orval": "8.40.0",
     "oxlint": "^1.81.0",
     "postcss": "^8.5.29",
     "postcss-preset-mantine": "^1.18.0",

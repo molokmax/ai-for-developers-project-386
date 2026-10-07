@@ -5,7 +5,8 @@
 ## Структура
 
 - `src/CallCalendar.Api/` - бэкенд: .NET 10, ASP.NET Core Minimal API, EF Core + SQLite. Входная точка `Program.cs`; эндпоинты в `Endpoints/` (extension-методы на `IEndpointRouteBuilder`), данные в `Data/`
-- `client/` - фронтенд: Vite + React 19 + TypeScript + Mantine v9, TanStack Query, react-router
+- `client/` - фронтенд: Vite + React 19 + TypeScript + Mantine v9, TanStack Query, react-router. Сгенерированный по контракту SDK: `src/api/gen/` (orval), руками не править
+- `contracts/` - контракт API: TypeSpec (`main.tsp`) -> OpenAPI 3.0 (`generated/openapi.json`, артефакт коммитится)
 - `tests/CallCalendar.Api.Tests/` - интеграционные тесты: xUnit + `WebApplicationFactory`, изолированная temp-SQLite на прогон
 
 ## Команды
@@ -25,6 +26,8 @@ dotnet test --filter FullyQualifiedName~SmokeTests  # один класс/мет
 npm run lint     # oxlint, НЕ eslint
 npm run build    # tsc -b + vite build (это же проверка типов)
 npm test         # vitest run; watch: npm run test:watch
+npm run api:gen       # регенерация SDK из ../contracts/generated/openapi.json (orval)
+npm run api:gen:watch # watch-режим генерации SDK
 ```
 
 Порядок в CI (`.github/workflows/ci.yml`): backend build(warnaserror) -> format -> test; frontend lint -> build -> test.
@@ -51,6 +54,14 @@ npm test         # vitest run; watch: npm run test:watch
 - Уведомления: статический `notifications.show()` из `@mantine/notifications`; хук `useNotifications()` не даёт метод `show`
 - Тесты в jsdom требуют моки `matchMedia`/`ResizeObserver` (уже в `src/test/setup.ts`), иначе Mantine падает при рендере
 - Русская локализация дат: `DatesProvider settings={{ locale: 'ru' }}` + `import 'dayjs/locale/ru'`
+
+## Контракт и генерация SDK
+
+- Контракт API авторствуется в `contracts/main.tsp` (TypeSpec), это источник истины; артефакт `contracts/generated/openapi.json` коммитится
+- После правки контракта: `npm run generate` из `contracts/`, затем `npm run api:gen` из `client/` - оба результата коммитятся (`contracts/generated/openapi.json` и `client/src/api/gen/`)
+- `npm run api:gen:check` из `client/` - drift-check: регенерация + `git diff --exit-code ./src/api/gen`; годится для CI
+- `client/src/api/gen/` генерируется orval, oxlint настроен игнорировать папку (ignorePatterns в `.oxlintrc.json`)
+- orval законтрен точной версией в `client/package.json` (без `^`), обновление осознанное отдельным PR; требует Node >= 22.18
 
 ## Прочее
 
