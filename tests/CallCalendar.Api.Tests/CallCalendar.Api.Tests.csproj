@@ -23,4 +23,21 @@
     <ProjectReference Include="..\..\src\CallCalendar.Api\CallCalendar.Api.csproj" />
   </ItemGroup>
 
+  <!--
+    MinimalOpenAPI копирует OpenApi-айтемы в выходной каталог только проекта, объявившего их.
+    Для WebApplicationFactory схема нужна в bin тестового проекта: копируем с той же формулой
+    SchemaId (стабильный хэш полного пути файла), что и targets пакета в API-проекте.
+  -->
+  <ItemGroup>
+    <_ContractSchema Include="..\..\contracts\generated\openapi.json">
+      <SchemaId>$([System.Math]::Abs($([MSBuild]::StableStringHash('%(FullPath)'))))</SchemaId>
+    </_ContractSchema>
+  </ItemGroup>
+  <Target Name="CopyContractSchemaToTestOutput" AfterTargets="Build">
+    <MakeDir Directories="@(_ContractSchema->'$(OutDir)openapi/schemas/%(SchemaId)')" />
+    <Copy SourceFiles="@(_ContractSchema)"
+          DestinationFiles="@(_ContractSchema->'$(OutDir)openapi/schemas/%(SchemaId)/%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

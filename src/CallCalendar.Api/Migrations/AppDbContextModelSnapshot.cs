@@ -19,7 +19,7 @@ namespace CallCalendar.Api.Migrations
 
             modelBuilder.Entity("CallCalendar.Api.Data.Entities.Booking", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
@@ -28,56 +28,74 @@ namespace CallCalendar.Api.Migrations
 
                     b.Property<string>("CustomerEmail")
                         .IsRequired()
+                        .HasMaxLength(320)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CustomerName")
                         .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TimeSlotId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TimeSlotId");
-
-                    b.ToTable("Bookings");
-                });
-
-            modelBuilder.Entity("CallCalendar.Api.Data.Entities.TimeSlot", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<TimeSpan>("Duration")
+                    b.Property<DateTime>("EndUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsBooked")
+                    b.Property<long>("EventTypeId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartUtc")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EventTypeId");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
                     b.HasIndex("StartUtc");
 
-                    b.ToTable("TimeSlots");
+                    b.ToTable("Bookings");
+                });
+
+            modelBuilder.Entity("CallCalendar.Api.Data.Entities.EventType", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EventTypes");
                 });
 
             modelBuilder.Entity("CallCalendar.Api.Data.Entities.Booking", b =>
                 {
-                    b.HasOne("CallCalendar.Api.Data.Entities.TimeSlot", "TimeSlot")
+                    b.HasOne("CallCalendar.Api.Data.Entities.EventType", "EventType")
                         .WithMany("Bookings")
-                        .HasForeignKey("TimeSlotId")
+                        .HasForeignKey("EventTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("TimeSlot");
+                    b.Navigation("EventType");
                 });
 
-            modelBuilder.Entity("CallCalendar.Api.Data.Entities.TimeSlot", b =>
+            modelBuilder.Entity("CallCalendar.Api.Data.Entities.EventType", b =>
                 {
                     b.Navigation("Bookings");
                 });

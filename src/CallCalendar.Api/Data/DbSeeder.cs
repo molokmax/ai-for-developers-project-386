@@ -3,33 +3,37 @@ using CallCalendar.Api.Data.Entities;
 namespace CallCalendar.Api.Data;
 
 /// <summary>
-/// Демо-данные для локальной разработки: часовые слоты на несколько дней вперёд.
+/// Сидирует демонстрационные типы событий. Слоты и записи не создаются: свободные слоты вычисляются на лету.
 /// </summary>
 public static class DbSeeder
 {
     public static void Seed(AppDbContext db)
     {
-        if (db.TimeSlots.Any())
+        if (db.EventTypes.Any())
         {
             return;
         }
 
-        var start = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
-        var slots = new List<TimeSlot>();
-
-        for (var day = 0; day < 3; day++)
-        {
-            for (var hour = 9; hour < 18; hour++)
+        db.EventTypes.AddRange(
+            new EventType
             {
-                slots.Add(new TimeSlot
-                {
-                    StartUtc = start.AddDays(day).ToDateTime(new TimeOnly(hour, 0)),
-                    Duration = TimeSpan.FromHours(1),
-                });
-            }
-        }
+                Name = "Вводный звонок",
+                Description = "Знакомство, обсуждение целей и запроса",
+                DurationMinutes = 30,
+            },
+            new EventType
+            {
+                Name = "Обсуждение проекта",
+                Description = "Разбор требований, сроков и бюджета проекта",
+                DurationMinutes = 60,
+            },
+            new EventType
+            {
+                Name = "Ревью кода",
+                Description = "Разбор архитектуры и кода проекта с рекомендациями",
+                DurationMinutes = 90,
+            });
 
-        db.TimeSlots.AddRange(slots);
         db.SaveChanges();
     }
 }

@@ -37,16 +37,20 @@ npm run api:gen:watch # watch-режим генерации SDK
 - Терминал 1: `dotnet run --launch-profile http` из `src/CallCalendar.Api` -> http://localhost:5262
 - Терминал 2: `npm run dev` из `client` -> http://localhost:5173
 - Фронт дергает API через Vite-прокси `/api`; CORS настраивать не нужно, HTTPS-редирект намеренно отключен в Program.cs
-- OpenAPI-схема: `/openapi/v1.json`, только Development
+- Авторская OpenAPI-схема контракта: `/openapi/schema.json`, только Development (публикуется MinimalOpenAPI)
 
 ## Бэкенд: нюансы
 
-- В Development при старте сами применяются миграции и сидируются слоты (`DbSeeder`); `callcalendar.db` в gitignore
+- В Development при старте сами применяются миграции и сидируются типы событий (`DbSeeder`); `callcalendar.db` в gitignore
+- Контракт-first: эндпоинты из спеки генерируются source-генератором MinimalOpenAPI (см. раздел «Контракт и генерация SDK»); хендлеры - ручные классы в `Endpoints/`, наследующие генерированные `*EndpointBase`; отсутствующая реализация ловится компилятором (MOA001)
+- Валидация запросов: DataAnnotations из генерированных контрактных records + свой `ValidationEndpointFilter` (400 + application/problem+json с ошибками по полям, вложенные объекты не рекурсируются). Встроенный `AddValidation` не применяется: он не видит типы из чужого source generator
+- Бизнес-правила (свободность слота, окно 14 дней, конфликт 409, идемпотентность по Idempotency-Key) в ручных хендлерах; сетка/окно в `Services/SlotGrid.cs`, часовой пояс владельца в `appsettings.json` (`Calendar:TimeZone`)
 - Миграции из `src/CallCalendar.Api/`: `dotnet ef migrations add Name`; `**/Migrations/**` - генерируемый код, не править руками, style-правила там отключены
 - `public partial class Program;` в конце Program.cs нужен для `WebApplicationFactory<Program>`, не удалять
-- `Microsoft.OpenApi` закреплен на 2.7.5 (CVE-2026-49451, GHSA-v5pm-xwqc-g5wc). Не повышать до 3.x: ломает source-генератор `Microsoft.AspNetCore.OpenApi` (CS0200 на MapOpenApi)
+- SQLite не транслирует сравнения DateTimeOffset: в сущностях DateTime (UTC, Kind восстанавливается конвертером), DateTimeOffset только на контрактной границе
+- `MapOpenApi`/`Microsoft.AspNetCore.OpenApi` удалены: контракт живёт в `contracts/generated/openapi.json`, рантайм-генерации документа из кода нет
 - В шаблонах .NET 10 нет Swashbuckle/Swagger UI
-- `Directory.Build.props` включает `EnforceCodeStyleInBuild`, `AnalysisMode=Recommended`, `GenerateDocumentationFile` (последняя - ради IDE0005 на билде, CS1591 подавлен)
+- `Directory.Build.props` включает `EnforceCodeStyleInBuild`, `AnalysisMode=Recommended`, `GenerateDocumentationFile` (последняя - ради IDE0005 на билде, CS1591 подавлен в .editorconfig и NoWarn)
 
 ## Фронтенд: нюансы (Mantine v9)
 

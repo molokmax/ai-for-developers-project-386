@@ -1,19 +1,28 @@
 namespace CallCalendar.Api.Data.Entities;
 
 /// <summary>
-/// Бронирование слота клиентом.
+/// Запись: занятый интервал с контактами гостя. Слоты не хранятся, хранятся только записи.
+/// Все времена в UTC (DateTime.Kind = Utc, обеспечивается конвертером при материализации).
 /// </summary>
 public class Booking
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
 
-    public int TimeSlotId { get; set; }
+    public long EventTypeId { get; set; }
 
-    public TimeSlot? TimeSlot { get; set; }
+    public EventType? EventType { get; set; }
 
-    public string CustomerName { get; set; } = string.Empty;
+    public DateTime StartUtc { get; set; }
 
-    public string CustomerEmail { get; set; } = string.Empty;
+    /// <summary>Конец интервала: начало плюс длительность типа события.</summary>
+    public DateTime EndUtc { get; set; }
+
+    public required string CustomerName { get; set; }
+
+    public required string CustomerEmail { get; set; }
+
+    /// <summary>Ключ идемпотентности (UUID из заголовка Idempotency-Key).</summary>
+    public required string IdempotencyKey { get; set; }
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 }
