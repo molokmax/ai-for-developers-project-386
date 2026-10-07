@@ -59,3 +59,39 @@ jobs:
 
       - name: Tests (vitest)
         run: npm test
+
+      # Контракт-first: регенерация SDK из артефакта контракта не должна расходиться
+      # с закоммиченным кодом (орval законтрен точной версией в package.json)
+      - name: Drift check (generated SDK)
+        run: npm run api:gen:check
+
+  # Контракт-first: артефакт OpenAPI коммитится, расхождение контракта и артефакта роняет CI
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (tsp compile --no-emit --warn-as-error)
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Generate OpenAPI artifact
+        run: npm run generate
+
+      - name: Drift check (openapi.json is committed)
+        run: git diff --exit-code -- generated/openapi.json
