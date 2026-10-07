@@ -76,6 +76,8 @@ PORT=3000 docker compose up --build
 - Сборка CI: PR - только `docker build` без публикации, push в `main` и теги `v*` -
   публикация в `ghcr.io/molokmax/ai-for-developers-project-386`
   (`.github/workflows/docker.yml`)
+- Деплой последней релизной версии на VPS: `scripts/deploy.sh`, инструкция -
+  [docs/deploy.md](docs/deploy.md)
 
 Полезные команды:
 

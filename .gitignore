@@ -18,6 +18,7 @@ dist/
 # Env
 .env
 .env.*
+!.env.deploy.example
 
 # OS
 Thumbs.db

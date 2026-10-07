@@ -1,1 +1,3 @@
 * text=auto eol=lf
+# Shell-скрипты должны оставаться с LF: CRLF ломает bash (в том числе в Git Bash на Windows)
+*.sh text eol=lf
