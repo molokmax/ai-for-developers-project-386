@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/molokmax/ai-for-developers-project-386/compare/v1.1.0...v1.2.0) (2026-10-07)
+
+
+### Features
+
+* add VPS deploy script and setup docs ([e52c53b](https://github.com/molokmax/ai-for-developers-project-386/commit/e52c53b9a8ef37117cbca507fa70a5036c580430))
+
 ## [1.1.0](https://github.com/molokmax/ai-for-developers-project-386/compare/v1.0.0...v1.1.0) (2026-10-07)
 
 
