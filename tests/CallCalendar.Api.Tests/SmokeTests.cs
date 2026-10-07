@@ -237,6 +237,22 @@ public class SmokeTests(WebAppFactory factory) : IClassFixture<WebAppFactory>
     }
 
     [Fact]
+    public async Task Slots_BookedStartIsNotOfferedAsFree()
+    {
+        var client = factory.CreateClient();
+        var (eventTypeId, _, slotStart) = await GetBookableSlotAsync(client);
+
+        var created = await PostBookingAsync(client, Guid.NewGuid().ToString(), eventTypeId, slotStart);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var slotsAfter = await GetSlotsAsync(client, eventTypeId);
+
+        Assert.DoesNotContain(slotsAfter, slot =>
+            DateTimeOffset.Parse(slot.GetProperty("startUtc").GetString()!, CultureInfo.InvariantCulture) ==
+            DateTimeOffset.Parse(slotStart, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
     public async Task Booking_DifferentEventTypesOnSameInterval_ReturnsConflict()
     {
         var client = factory.CreateClient();
