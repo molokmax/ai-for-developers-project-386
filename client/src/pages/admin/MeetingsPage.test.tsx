@@ -1,13 +1,8 @@
-import { cleanup, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import dayjs from 'dayjs'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mockFetch, renderPage } from '../../test/helpers'
 import MeetingsPage from './MeetingsPage'
-
-afterEach(() => {
-  cleanup()
-  vi.unstubAllGlobals()
-})
 
 const start = dayjs().add(2, 'day').hour(11).minute(0).second(0).millisecond(0).toISOString()
 

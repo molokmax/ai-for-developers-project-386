@@ -6,23 +6,19 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { bookingsCreate, getSlotsListQueryKey, useEventTypesList, useSlotsList } from '../api/gen'
-import type { Booking, ProblemDetails, Slot } from '../api/gen/model'
+import { problemFieldErrors, type FieldErrors } from '../api/problemErrors'
+import type { Booking, Slot } from '../api/gen/model'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-type FieldErrors = Partial<Record<'name' | 'email', string>>
+type BookingFieldErrors = FieldErrors<'name' | 'email'>
 
-// Ошибки валидации 400 приходят по именам полей контракта (RFC 9457 validation problem)
-function problemFieldErrors(problem: ProblemDetails & { errors?: Record<string, string[]> }): FieldErrors {
-  const errors: FieldErrors = {}
-  for (const [field, messages] of Object.entries(problem.errors ?? {})) {
-    const message = messages[0]
-    if (!message) continue
-    if (field === 'customerName') errors.name = message
-    if (field === 'customerEmail') errors.email = message
-  }
-  return errors
-}
+// Ключи ошибок валидации: имена полей контракта -> поля формы
+const CONTRACT_FIELD_MAP = { customerName: 'name', customerEmail: 'email' } as const
+
+// Окно записи: 14 календарных дней (спека). Сервер считает окно в часовом поясе
+// владельца и валидирует окончательно; границы календаря здесь только для UX
+const BOOKING_WINDOW_DAYS = 14
 
 // Idempotency-Key: UUID на попытку записи (спека); в jsdom randomUUID может отсутствовать
 function newIdempotencyKey(): string {
@@ -49,13 +45,14 @@ export default function BookingPage() {
 
   const slotsQuery = useSlotsList({ eventTypeId })
   const slots = slotsQuery.data?.status === 200 ? slotsQuery.data.data : undefined
-  const isUnknownEventType = slotsQuery.data?.status === 404
+  // Некорректный id в URL (NaN) даёт 400 вместо 404: показываем то же сообщение
+  const isUnknownEventType = !Number.isFinite(eventTypeId) || slotsQuery.data?.status === 404
 
   const [date, setDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({})
   const [confirmed, setConfirmed] = useState<Booking | null>(null)
 
   const slotsByDate = useMemo(() => {
@@ -75,7 +72,7 @@ export default function BookingPage() {
 
   const datesWithSlots = useMemo(() => [...slotsByDate.keys()].sort(), [slotsByDate])
   const today = dayjs().format('YYYY-MM-DD')
-  const windowEnd = dayjs().add(13, 'day').format('YYYY-MM-DD')
+  const windowEnd = dayjs().add(BOOKING_WINDOW_DAYS - 1, 'day').format('YYYY-MM-DD')
   const activeDate = date ?? datesWithSlots[0] ?? today
   const daySlots = slotsByDate.get(activeDate) ?? []
 
@@ -103,7 +100,7 @@ export default function BookingPage() {
       }
 
       if (response.status === 400) {
-        const errors = problemFieldErrors(response.data)
+        const errors = problemFieldErrors(response.data, CONTRACT_FIELD_MAP)
         setFieldErrors(errors)
         if (Object.keys(errors).length === 0) {
           notifications.show({
@@ -124,7 +121,7 @@ export default function BookingPage() {
   })
 
   const submit = () => {
-    const errors: FieldErrors = {}
+    const errors: BookingFieldErrors = {}
     if (!name.trim()) errors.name = 'Укажите имя'
     if (!EMAIL_PATTERN.test(email.trim())) errors.email = 'Укажите корректный email'
     setFieldErrors(errors)

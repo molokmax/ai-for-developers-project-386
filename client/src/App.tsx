@@ -1,4 +1,4 @@
-import { Anchor, AppShell, Button, Group, Text } from '@mantine/core'
+import { Anchor, AppShell, Group, Text } from '@mantine/core'
 import { Link, Outlet } from 'react-router-dom'
 
 export default function App() {
@@ -18,9 +18,6 @@ export default function App() {
             <Anchor component={Link} to="/admin/meetings" c="inherit">
               Встречи
             </Anchor>
-            <Button component={Link} to="/">
-              Записаться
-            </Button>
           </Group>
         </Group>
       </AppShell.Header>

@@ -1,13 +1,8 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import dayjs from 'dayjs'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mockFetch, renderPage } from '../test/helpers'
 import BookingPage from './BookingPage'
-
-afterEach(() => {
-  cleanup()
-  vi.unstubAllGlobals()
-})
 
 const eventType = {
   id: 1,
@@ -91,6 +86,32 @@ describe('BookingPage (запись на слот)', () => {
     expect(await screen.findByText('Укажите имя')).toBeDefined()
     expect(screen.getByText('Укажите корректный email')).toBeDefined()
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+  })
+
+  it('серверные ошибки 400 подсвечивает по полям формы', async () => {
+    mockFetch([
+      { url: '/api/event-types', status: 200, body: [eventType] },
+      { url: '/api/slots', status: 200, body: slots },
+      {
+        url: '/api/bookings',
+        method: 'POST',
+        status: 400,
+        body: {
+          status: 400,
+          title: 'One or more validation errors occurred.',
+          // Валидация отдаёт ключи как имена C#-свойств (PascalCase)
+          errors: { CustomerEmail: ['The CustomerEmail field is not a valid e-mail address.'] },
+        },
+      },
+    ])
+
+    renderPage(<BookingPage />, { route: '/book/1', path: '/book/:eventTypeId' })
+
+    await screen.findByText('Вводный звонок')
+    fillForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    expect(await screen.findByText(/not a valid e-mail/i)).toBeDefined()
   })
 
   it('при 409 показывает уведомление и перезапрашивает слоты', async () => {

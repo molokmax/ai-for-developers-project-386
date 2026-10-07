@@ -14,22 +14,17 @@ import { notifications } from '@mantine/notifications'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { eventTypesCreate, getEventTypesListQueryKey, useEventTypesList } from '../../api/gen'
-import type { CreateEventTypeRequest, ProblemDetails } from '../../api/gen/model'
+import { problemFieldErrors, type FieldErrors } from '../../api/problemErrors'
+import type { CreateEventTypeRequest } from '../../api/gen/model'
 
-type FieldErrors = Partial<Record<'name' | 'description' | 'durationMinutes', string>>
+type EventTypeFieldErrors = FieldErrors<'name' | 'description' | 'durationMinutes'>
 
-// Ошибки валидации 400 приходят по именам полей контракта (RFC 9457 validation problem)
-function problemFieldErrors(problem: ProblemDetails & { errors?: Record<string, string[]> }): FieldErrors {
-  const errors: FieldErrors = {}
-  for (const [field, messages] of Object.entries(problem.errors ?? {})) {
-    const message = messages[0]
-    if (!message) continue
-    if (field === 'name' || field === 'description' || field === 'durationMinutes') {
-      errors[field] = message
-    }
-  }
-  return errors
-}
+// Ключи ошибок валидации: имена полей контракта -> поля формы
+const CONTRACT_FIELD_MAP = {
+  name: 'name',
+  description: 'description',
+  durationMinutes: 'durationMinutes',
+} as const
 
 export default function EventTypesPage() {
   const { data, isLoading } = useEventTypesList()
@@ -39,7 +34,7 @@ export default function EventTypesPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [duration, setDuration] = useState<string | number>(30)
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [fieldErrors, setFieldErrors] = useState<EventTypeFieldErrors>({})
 
   const createMutation = useMutation({
     mutationFn: (request: CreateEventTypeRequest) => eventTypesCreate(request),
@@ -58,12 +53,20 @@ export default function EventTypesPage() {
         return
       }
 
-      setFieldErrors(problemFieldErrors(response.data))
+      const errors = problemFieldErrors(response.data, CONTRACT_FIELD_MAP)
+      setFieldErrors(errors)
+      if (Object.keys(errors).length === 0) {
+        notifications.show({
+          title: response.data.title ?? 'Некорректный запрос',
+          message: response.data.detail ?? 'Проверьте данные формы',
+          color: 'red',
+        })
+      }
     },
   })
 
   const submit = () => {
-    const errors: FieldErrors = {}
+    const errors: EventTypeFieldErrors = {}
     if (!name.trim()) errors.name = 'Укажите название'
     const minutes = Number(duration)
     if (!Number.isFinite(minutes) || minutes < 30 || minutes % 30 !== 0) {

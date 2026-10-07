@@ -3,9 +3,9 @@
 // Файл лежит вне src/api/gen: папка генерации чистится при регенерации (clean: true).
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useEventTypesCreate, useEventTypesList } from './gen'
 import type { EventType } from './gen/model'
@@ -22,11 +22,6 @@ const createWrapper = () => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   }
 }
-
-afterEach(() => {
-  cleanup()
-  vi.unstubAllGlobals()
-})
 
 describe('SDK из OpenAPI-контракта', () => {
   it('useEventTypesList получает типы событий с /api/event-types', async () => {

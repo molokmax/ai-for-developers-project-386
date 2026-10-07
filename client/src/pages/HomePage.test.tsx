@@ -1,12 +1,7 @@
-import { cleanup, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { mockFetch, renderPage } from '../test/helpers'
 import HomePage from './HomePage'
-
-afterEach(() => {
-  cleanup()
-  vi.unstubAllGlobals()
-})
 
 const eventType = {
   id: 1,

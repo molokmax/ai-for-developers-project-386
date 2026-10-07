@@ -1,12 +1,7 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { mockFetch, renderPage } from '../../test/helpers'
 import EventTypesPage from './EventTypesPage'
-
-afterEach(() => {
-  cleanup()
-  vi.unstubAllGlobals()
-})
 
 const existingType = {
   id: 1,
