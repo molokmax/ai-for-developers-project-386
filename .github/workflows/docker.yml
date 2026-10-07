@@ -6,6 +6,11 @@ on:
       - main
     tags:
       - 'v*'
+  # release-please пушит мерж и тег одним git push: событие пуша тега
+  # при этом не триггерит workflow, поэтому семверные теги образа
+  # берём из события публикации релиза (ref = refs/tags/vX.Y.Z)
+  release:
+    types: [published]
   pull_request:
 
 permissions:
