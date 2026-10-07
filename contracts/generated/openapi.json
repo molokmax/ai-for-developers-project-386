@@ -1,0 +1,493 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Календарь звонков API",
+    "description": "API сервиса записи на звонок.\nГость выбирает тип события и свободный слот в окне записи (14 календарных дней, включая текущий), владелец календаря управляет типами событий и смотрит предстоящие встречи.\nРегистрации и авторизации нет: административный раздел работает от имени единственного заранее заданного профиля владельца.\nВремя в API передаётся в UTC (ISO 8601); сетка слотов вычисляется на сервере в часовом поясе владельца (по умолчанию Europe/Moscow).",
+    "version": "0.0.0"
+  },
+  "tags": [
+    {
+      "name": "EventTypes"
+    },
+    {
+      "name": "Slots"
+    },
+    {
+      "name": "Bookings"
+    },
+    {
+      "name": "Meetings"
+    }
+  ],
+  "paths": {
+    "/api/bookings": {
+      "post": {
+        "operationId": "Bookings_create",
+        "description": "Создать запись на выбранный слот (гость).\nИдемпотентно по заголовку Idempotency-Key: повтор с тем же ключом возвращает первичный результат, дубль не создаётся.\nПри пересечении интервала с существующей записью: 409.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Ключ идемпотентности: UUID, генерируется клиентом на попытку записи",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The request has succeeded and a new resource has been created as a result.",
+            "headers": {
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт занятости: интервал пересекается с существующей записью",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Bookings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/event-types": {
+      "get": {
+        "operationId": "EventTypes_list",
+        "description": "Список типов событий. Используется и каталогом гостя, и административным разделом владельца",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventType"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "EventTypes"
+        ]
+      },
+      "post": {
+        "operationId": "EventTypes_create",
+        "description": "Создать тип события (владелец календаря)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "The request has succeeded and a new resource has been created as a result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventType"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "EventTypes"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventTypeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meetings": {
+      "get": {
+        "operationId": "Meetings_list",
+        "description": "Предстоящие встречи всех типов событий (владелец календаря), сортировка по времени начала; прошедшие не возвращаются",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Meeting"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Meetings"
+        ]
+      }
+    },
+    "/api/slots": {
+      "get": {
+        "operationId": "Slots_list",
+        "description": "Свободные слоты для типа события в окне записи: 14 календарных дней по времени владельца, включая текущий день (прошедшие слоты сегодня недоступны).\nСлот свободен, если его интервал не пересекается с интервалами существующих записей любых типов событий.",
+        "parameters": [
+          {
+            "name": "eventTypeId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Slot"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ресурс не найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Slots"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Booking": {
+        "type": "object",
+        "required": [
+          "id",
+          "eventType",
+          "startUtc",
+          "endUtc",
+          "customerName",
+          "customerEmail"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Идентификатор записи"
+          },
+          "eventType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventTypeSummary"
+              }
+            ],
+            "description": "Тип события"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Начало (UTC)"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Конец (UTC)"
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Имя гостя"
+          },
+          "customerEmail": {
+            "type": "string",
+            "description": "Email гостя"
+          }
+        },
+        "description": "Запись: занятый слот с контактами гостя"
+      },
+      "CreateBookingRequest": {
+        "type": "object",
+        "required": [
+          "eventTypeId",
+          "startUtc",
+          "customerName",
+          "customerEmail"
+        ],
+        "properties": {
+          "eventTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Идентификатор типа события"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Начало слота (UTC), должно лежать на сетке с шагом 30 минут в пределах окна записи"
+          },
+          "customerName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Имя гостя"
+          },
+          "customerEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email гостя"
+          }
+        },
+        "description": "Запрос на создание записи"
+      },
+      "CreateEventTypeRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "durationMinutes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Название"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 30,
+            "description": "Длительность в минутах: кратна 30, минимум 30 (кратность проверяется на сервере)"
+          }
+        },
+        "description": "Запрос на создание типа события"
+      },
+      "EventType": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "durationMinutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Идентификатор типа события"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Название"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 30,
+            "description": "Длительность в минутах: кратна 30, минимум 30 (кратность проверяется на сервере)"
+          }
+        },
+        "description": "Тип события: вид встречи, которую владелец календаря предлагает для записи"
+      },
+      "EventTypeSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Идентификатор типа события"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название"
+          }
+        },
+        "description": "Краткие данные типа события для вложения в другие модели"
+      },
+      "Meeting": {
+        "type": "object",
+        "required": [
+          "id",
+          "eventType",
+          "startUtc",
+          "endUtc",
+          "customerName",
+          "customerEmail"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Идентификатор записи"
+          },
+          "eventType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventTypeSummary"
+              }
+            ],
+            "description": "Тип события"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Начало (UTC)"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Конец (UTC)"
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Имя гостя"
+          },
+          "customerEmail": {
+            "type": "string",
+            "description": "Email гостя"
+          }
+        },
+        "description": "Предстоящая встреча в списке владельца календаря"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "URI типа проблемы"
+          },
+          "title": {
+            "type": "string",
+            "description": "Краткое описание типа проблемы"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "HTTP-статус"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Описание конкретного случая"
+          },
+          "instance": {
+            "type": "string",
+            "description": "URI конкретного случая"
+          }
+        },
+        "description": "Problem Details (RFC 9457)"
+      },
+      "Slot": {
+        "type": "object",
+        "required": [
+          "startUtc",
+          "endUtc"
+        ],
+        "properties": {
+          "startUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Начало слота (UTC). Сетка: каждые 30 минут в интервале 09:00-18:00 по времени владельца календаря"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Конец слота (UTC): начало плюс длительность типа события. Запись всегда целиком помещается в интервал 09:00-18:00"
+          }
+        },
+        "description": "Свободный слот: возможное время начала записи"
+      }
+    }
+  }
+}
