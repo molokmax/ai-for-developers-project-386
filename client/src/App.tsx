@@ -11,9 +11,17 @@ export default function App() {
               Календарь звонков
             </Text>
           </Anchor>
-          <Button component={Link} to="/slots">
-            Записаться
-          </Button>
+          <Group gap="md">
+            <Anchor component={Link} to="/admin/event-types" c="inherit">
+              Типы событий
+            </Anchor>
+            <Anchor component={Link} to="/admin/meetings" c="inherit">
+              Встречи
+            </Anchor>
+            <Button component={Link} to="/">
+              Записаться
+            </Button>
+          </Group>
         </Group>
       </AppShell.Header>
 
